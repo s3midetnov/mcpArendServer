@@ -32,8 +32,7 @@ fun createServer(): Server {
         "Arend_goal_typecheck_MCP",
         "1.0.0"
     )
-    val options = ServerOptions(
-        capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(true))
+    val options = ServerOptions(capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(true))
     )
     val server = Server(info, options)
 
