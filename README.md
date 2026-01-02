@@ -3,6 +3,7 @@ The example task is typechecking with a programming language with dependent type
 
 How to use it with Claude: run the Gradle task `installDist`, it will create a file in ./build/install/mcpArendServer/bin/ then in Claude desktop 
 go to Settings -> Desktop app/Developer, click edit configuration and add the following (with the absolute path to the executable):
+```json
 {
     "mcpServers": {
         "arend": {
@@ -11,3 +12,4 @@ go to Settings -> Desktop app/Developer, click edit configuration and add the fo
         }
     }
 }
+```
