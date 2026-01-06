@@ -1,7 +1,14 @@
 package org.example.arendClient
 
 class ArendClientImpl : ArendClient {
-    override suspend fun typecheck(file: String): String {
-        return "Typechecked $file + chipi + chipi"
+
+    val arendVisitor = ArendVisitor("../Arend/arend-lib")
+
+    override suspend fun typecheck_definition(code: String): String {
+        arendVisitor.writeArendFunction(code)
+
+        val errorTrace = arendVisitor.typeCheckFile("x1817y16.ard")
+
+        return errorTrace
     }
 }

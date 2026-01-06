@@ -1,12 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
+        <compositeConfiguration>
+          <compositeBuild compositeDefinitionSource="SCRIPT">
+            <builds>
+              <build path="$PROJECT_DIR$/../Arend" name="Arend">
+                <projects>
+                  <project path="$PROJECT_DIR$/../Arend" />
+                  <project path="$PROJECT_DIR$/../Arend/api" />
+                  <project path="$PROJECT_DIR$/../Arend/arend-lib" />
+                  <project path="$PROJECT_DIR$/../Arend/arend-lib/meta" />
+                  <project path="$PROJECT_DIR$/../Arend/base" />
+                  <project path="$PROJECT_DIR$/../Arend/cli" />
+                  <project path="$PROJECT_DIR$/../Arend/intellij" />
+                  <project path="$PROJECT_DIR$/../Arend/parser" />
+                  <project path="$PROJECT_DIR$/../Arend/proto" />
+                </projects>
+              </build>
+              <build path="$PROJECT_DIR$/../Arend/buildSrc" name="buildSrc">
+                <projects>
+                  <project path="$PROJECT_DIR$/../Arend/buildSrc" />
+                </projects>
+              </build>
+            </builds>
+          </compositeBuild>
+        </compositeConfiguration>
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="gradleJvm" value="#JAVA_HOME" />
         <option name="modules">
           <set>
+            <option value="$PROJECT_DIR$/../Arend" />
+            <option value="$PROJECT_DIR$/../Arend/api" />
+            <option value="$PROJECT_DIR$/../Arend/arend-lib" />
+            <option value="$PROJECT_DIR$/../Arend/arend-lib/meta" />
+            <option value="$PROJECT_DIR$/../Arend/base" />
+            <option value="$PROJECT_DIR$/../Arend/buildSrc" />
+            <option value="$PROJECT_DIR$/../Arend/cli" />
+            <option value="$PROJECT_DIR$/../Arend/intellij" />
+            <option value="$PROJECT_DIR$/../Arend/parser" />
+            <option value="$PROJECT_DIR$/../Arend/proto" />
             <option value="$PROJECT_DIR$" />
           </set>
         </option>

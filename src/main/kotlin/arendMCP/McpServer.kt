@@ -47,7 +47,9 @@ fun createServer(): Server {
 
     val codeInputSchema = Tool.Input(
         buildJsonObject {
-            putJsonObject("function"){JsonPrimitive("string")}
+            putJsonObject("function"){
+                JsonPrimitive("string")
+            }
         }
     )
 
@@ -60,7 +62,7 @@ fun createServer(): Server {
         val function = input.arguments["function"]!!.jsonPrimitive.content
         CallToolResult(
         listOf(
-            TextContent(arendClient.typecheck(function)))
+            TextContent(arendClient.typecheck_definition(function)))
         )
     }
 

@@ -25,6 +25,8 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
+    implementation("org.arend:base")
+    implementation("org.arend:cli")
 }
 
 kotlin {
