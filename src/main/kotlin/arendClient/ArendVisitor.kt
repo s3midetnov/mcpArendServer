@@ -41,15 +41,13 @@ import java.util.function.Supplier
 import kotlin.system.exitProcess
 
 
-class ArendVisitor (pathToLibrary: String) {
+class ArendVisitor (pathToLibrary: String = "/Users/artem.semidetnov/Dev/Arend/arend-lib") {
 
+    // TODO: add automatic dependency inclusion
     fun writeArendFunction(code : String = """\func testx18 (x : Nat) : Nat => x Nat.+ five""" ) {
-        // TODO: add automatic dependency inclusion
-
         val file = File("/Users/artem.semidetnov/Dev/Arend/arend-lib/src/Algebra/Group/x1817y16.ard")
         file.writeText(code)
     }
-
 
     fun typeCheckFile(nameOfFile : String) : String{
         try {

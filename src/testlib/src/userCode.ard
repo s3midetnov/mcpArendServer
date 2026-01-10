@@ -1,0 +1,3 @@
+\import Algebra.Domain.Euclidean
+
+\func f : EuclideanSemiringData.gcd 2 3 = 1 => idp
