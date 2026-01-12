@@ -13,3 +13,4 @@ go to Settings -> Desktop app/Developer, click edit configuration and add the fo
     }
 }
 ```
+Alternatively, to add it to JetBrains Junie, insert the same "arend" tool in Junie/Settings/MCP Settings.

@@ -48,24 +48,24 @@ class SimpleTypechecker (val pathToLibrary: String) {
 
     var isLibraryTypechecked : Boolean = false
     var isServerInitialized : Boolean = false
+    var isDebugging : Boolean = false
 
 
     fun createArendServer() {
-        val file = File("$pathToLibrary/src/userCode.ard")
-        file.writeText("")
-
+        if (!isDebugging) {
+            val file = File("$pathToLibrary/src/userCode.ard")
+            file.writeText("")
+        }
 
         library = FileSourceLibrary.fromConfigFile(libDir.resolve(FileUtils.LIBRARY_CONFIG_FILE), true, listErrorReporter)
         requestedLibraries.addLast(library)
 
         arendServer = ArendServerImpl(CliServerRequester(libraryManager), false, false, true)
-//        println("prelude module location ${Prelude.MODULE_LOCATION}")
 
         arendServer.addErrorReporter(listErrorReporter)
         arendServer.addReadOnlyModule(
             Prelude.MODULE_LOCATION,
             Supplier { Objects.requireNonNull<ConcreteGroup?>(PreludeResourceSource().loadGroup(DummyErrorReporter.INSTANCE)) })
-//        arendServer.updateLibrary(library, listErrorReporter)
         isServerInitialized = true
     }
 
@@ -76,8 +76,14 @@ class SimpleTypechecker (val pathToLibrary: String) {
 
     fun typecheckToError() : String {
         listErrorReporter.errorList.clear()
-        if (!isServerInitialized) createArendServer()
-        assert (isServerInitialized)
+        if (!isServerInitialized) {
+            System.err.println("Initializing server...")
+            createArendServer()
+        }else{
+            assert (isServerInitialized)
+            System.err.println("Server already initialized")
+        }
+
 
         val allModules = requestedLibraries.flatMap { library ->
             library.findModules(false).map { it to library }

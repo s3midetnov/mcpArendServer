@@ -58,7 +58,8 @@ fun createServer(): Server {
 
     server.addTool(
         name="Typecheck_definition",
-        description = "Typechecks a definition in Arend, returns error messages separated by comma",
+        description = "Typechecks a definition in Arend, returns error messages separated by comma." +
+                " You need to send it a full definition, not just the name of a function, but the whole body and all dependencies",
         codeInputSchema
     )
     { input ->
