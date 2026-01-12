@@ -20,6 +20,9 @@ import kotlinx.serialization.json.putJsonObject
 import org.example.arendClient.ArendClient
 import org.example.arendClient.ArendClientImpl
 
+//TODO:
+// 1. add a textual description of Arend features as a tool to offer LLM
+
 fun main() {
     val server: Server = createServer()
     val stdioServerTransport = StdioServerTransport(
@@ -37,7 +40,7 @@ fun main() {
 fun createServer(): Server {
     val info = Implementation(
         "Arend_goal_typecheck_MCP",
-        "1.0.0"
+        "1.1.0"
     )
     val options = ServerOptions(
         capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(true))
@@ -47,7 +50,7 @@ fun createServer(): Server {
 
     val codeInputSchema = Tool.Input(
         buildJsonObject {
-            putJsonObject("function"){
+            putJsonObject("definition"){
                 JsonPrimitive("string")
             }
         }
@@ -59,12 +62,11 @@ fun createServer(): Server {
         codeInputSchema
     )
     { input ->
-        val function = input.arguments["function"]!!.jsonPrimitive.content
+        val definition = input.arguments["definition"]!!.jsonPrimitive.content
         CallToolResult(
         listOf(
-            TextContent(arendClient.typecheck_definition(function)))
+            TextContent(arendClient.typecheck_definition(definition)))
         )
     }
-
     return server
 }

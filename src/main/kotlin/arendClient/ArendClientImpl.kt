@@ -1,14 +1,38 @@
 package org.example.arendClient
 
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.io.PrintWriter
+import java.net.Socket
+import java.net.SocketTimeoutException
+
 class ArendClientImpl : ArendClient {
+    override suspend fun typecheck_definition(definition: String): String {
+        val host = "localhost"
+        val port = 9999
+        try {
+            Socket(host, port).use { socket ->
+                // --- TIMEOUT LOGIC ---
+                // If read() takes longer than 2000ms, it throws SocketTimeoutException
+                socket.soTimeout = 2000
 
-    val arendVisitor = ArendVisitor("../Arend/arend-lib")
+                val output = PrintWriter(socket.getOutputStream(), true)
+                val input = BufferedReader(InputStreamReader(socket.getInputStream()))
 
-    override suspend fun typecheck_definition(code: String): String {
-        arendVisitor.writeArendFunction(code)
+                // 1. Send Info
+                System.err.println("Sending: $definition")
+                output.println(definition)
 
-        val errorTrace = arendVisitor.typeCheckFile("x1817y16.ard")
-
-        return errorTrace
+                // 2. Read Answer (Will block until data arrives or timeout hits)
+                val answer = input.readLine()
+                System.err.println("Server answered: $answer")
+                return answer
+            }
+        } catch (e: SocketTimeoutException) {
+            System.err.println("Error: The server took too long to respond!")
+        } catch (e: Exception) {
+            System.err.println("Connection error: ${e.message}")
+        }
+        return "Typechecking error"
     }
 }
