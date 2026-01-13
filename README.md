@@ -14,3 +14,6 @@ go to Settings -> Desktop app/Developer, click edit configuration and add the fo
 }
 ```
 Alternatively, to add it to JetBrains Junie, insert the same "arend" tool in Junie/Settings/MCP Settings.
+
+The server is currently hardcoded to listen on port 9999. 
+You need to run the typechecker server, wait until it typechecked the whole library, then you can use it with Claude or Junie.
