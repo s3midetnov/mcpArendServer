@@ -1,0 +1,139 @@
+## Syntax
+
+**Standard Case Expression**
+
+```arend
+\case <scrutinee_1>, ..., <scrutinee_n>
+  \as <identifier>                 -- Optional: Binds scrutinee value for dependency
+  \return <type_expression>        -- Optional: Explicit return type
+  \with {
+    | <pattern_1>, ..., <pattern_n> => <result_expression>
+    | ...
+  }
+
+```
+
+**Case via Elimination (Syntactic Sugar)**
+
+```arend
+\case \elim <variable_1>, ..., <variable_n> \with {
+  | <pattern_1>, ..., <pattern_n> => <result_expression>
+}
+
+```
+
+**Function Definition via Elimination**
+
+```arend
+\func <name> <args> : <type> \elim <args_to_match>
+  | <pattern> => <result>
+
+```
+
+## Rules
+
+### Evaluation and Normalization
+
+* **`\case` Behavior:** Evaluates immediately to the case tree expression. `f x` (where `f` uses `\case`) reduces to the `\case` expression body even if `x` is neutral.
+* **`\elim` Behavior:** Blocks reduction. `f x` (where `f` uses `\elim`) is in head normal form and does not reduce until the arguments match a pattern constructor.
+* **Preference:** `\elim` is preferred for top-level definitions to maintain cleaner normal forms. `\case` is used for internal branching within an expression.
+
+### Dependent Pattern Matching
+
+* **Type Dependency:** If the result type depends on the value of the scrutinee, the `\return` keyword is mandatory.
+* **Variable Binding (`\as`):** To reference the scrutinee within the `\return` type, `\as <name>` must be used immediately after the scrutinee.
+* **Substitution:** In each clause, the variable bound by `\as` in the return type is substituted by the matched pattern.
+
+### Variable Elimination (`\case \elim`)
+
+* Using `\case \elim x` is syntactic sugar for `\case x \as x' \return Type[x/x']`.
+* It automatically updates the context: occurrences of the variable `x` in the goal type are replaced by the pattern matched in the respective clause.
+
+### Identity Proof Retention (Double Matching)
+
+* Standard matching discards the equality relationship between the scrutinee and the pattern.
+* To retain the proof that `scrutinee = pattern` inside the clause (necessary for transport/rewriting), match simultaneously on the expression `e` and `idp`.
+* **Signature:** `\case e \as x, idp : x = e \with { | pattern, p => ... }` where `p` becomes the proof `pattern = e` (or `e = pattern` depending on binding).
+
+### Views
+
+* **Definition:** A technique to enforce custom pattern matching schemas on existing types (e.g., treating `Nat` as `Even | Odd` instead of `0 | suc`).
+* **Implementation:**
+1. Define a view datatype `D (a : A)` indexed by the original type `A`.
+2. Constructors of `D` wrap the custom patterns and include an equality proof `a = custom_pattern`.
+3. Define a conversion function `view : \Pi (a : A) -> D a`.
+4. Pattern match on `\case view a \with { ... }`.
+
+
+
+### Decidability
+
+* **Decidable Predicate:** A predicate  is decidable if .
+* **Type Definition:**
+```arend
+\data Decide (A : \Type)
+  | yes A
+  | no (A -> Empty)
+
+```
+
+
+* **DecEq:** A type class providing decidable equality `\Pi (x y : A) -> Decide (x = y)`.
+* **Bool Correspondence:** `DecPred P` is isomorphic to `A -> Bool` in classical logic, and constructible in intuitionistic logic for computable predicates.
+
+## Examples
+
+**Dependent Case with `\as` and `\return**`
+Matches on predicate result `p a` to prove logical negation involution.
+
+```arend
+\func foo {A : \Type} (p : A -> Bool) (a : A) : p a = not (not (p a)) =>
+  \case p a \as b \return b = not (not b) \with {
+    | true => idp
+    | false => idp
+  }
+
+```
+
+**`\elim` in `\case**`
+Simplifies the goal by replacing `x` with patterns automatically.
+
+```arend
+\func assoc (x y z : Bool) : (x && y) && z = x && (y && z) =>
+  \case \elim x \with {
+    | true => idp
+    | false => idp
+  }
+
+```
+
+**Double Matching for Proof Retention**
+Matches on `p a` and `idp` to transport a property `B`.
+
+```arend
+\func example {A : \Type} (B : Bool -> \Type) (p : A -> Bool) (a : A)
+             (pt : B true) (pf : B false) : B (p a) =>
+  \case p a \as b, idp : b = p a \with {
+     | true, q => transport B q pt   -- q : true = p a
+     | false, q => transport B q pf  -- q : false = p a
+  }
+
+```
+
+**Decidable Equality Instance**
+Implementation of `DecEq` for `Nat`.
+
+```arend
+\instance NatEq : Eq Nat
+  | decideEq => decideEq
+  \where
+    \func decideEq (x y : Nat) : Decide (x = y)
+      | 0, 0 => yes idp
+      | 0, suc y => no (\lam p => suc/=0 (inv p))
+      | suc x, 0 => no suc/=0
+      | suc x, suc y => \case decideEq x y \with {
+        | yes p => yes (pmap suc p)
+        | no c => no (\lam p => c (pmap pred p))
+      }
+
+```

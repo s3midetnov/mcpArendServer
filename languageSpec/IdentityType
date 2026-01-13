@@ -1,0 +1,134 @@
+## Primitives & Syntax
+
+### Interval Type
+
+The core primitive for defining equality is the **Interval type** `I`.
+
+* **Constructors**: `left : I`, `right : I`.
+* **Eliminator**: `coe` (coercion).
+* **Constraint**: Pattern matching on `I` is **prohibited**.
+
+### Identity Type Definition
+
+Equality `a = {A} a'` is defined as the type of functions `f : I -> A` such that `f left` computationally reduces to `a` and `f right` computationally reduces to `a'`.
+
+**Constructors & Accessors**:
+
+* `path (f : I -> A) : f left = f right` — Introduces an equality.
+* `@ (p : a = a') (i : I) : A` — Eliminates an equality (infix path application).
+* `idp : a = a` — Reflexivity (constant path). Defined as `path (\lam _ => a)`.
+
+### Signature Definitions
+
+```arend
+-- Core primitives
+\func path {A : \Type} (f : I -> A) : f left = f right
+\func @ {A : \Type} {a a' : A} (p : a = a') (i : I) : A
+\func coe (P : I -> \Type) (a : P left) (i : I) : P i
+
+-- Derived transport
+\func transport {A : \Type} (B : A -> \Type) {a a' : A} (p : a = a') (b : B a) : B a'
+
+```
+
+## Computational Rules
+
+1. **Beta-equivalence**: `path f @ i` evaluates to `f i`.
+2. **Eta-equivalence**: `path (\lam i => p @ i)` evaluates to `p`.
+3. **Reducibility**:
+* `transport` reduces to `coe`.
+* `pmap id` reduces to `id`.
+* `pmap (f . g)` reduces to `pmap f . pmap g`.
+
+
+4. **Interval Contractibility**: `left = right` is provable via `coe`. The type `I` is contractible to a single point propositionally, but contains two distinct terms computationally.
+
+## Transport & Leibniz Principle
+
+The **Leibniz Principle** (indiscernibility of identicals) is implemented via `transport`. This allows lifting equality into dependent types.
+
+* **Forward Leibniz**: If `a = a'`, properties of `a` hold for `a'`.
+* **Inverse Leibniz**: If `a` and `a'` share all properties, `a = a'`.
+* **Implementation**: `transport` is defined using `coe` by viewing the equality path `p` as a map from `I` to types.
+```arend
+transport B p b => coe (\lam i => B (p @ i)) b right
+
+```
+
+
+
+## Standard Derived Properties
+
+Equality allows construction of standard equivalence relations and congruence rules.
+
+| Property | Function | Description |
+| --- | --- | --- |
+| **Symmetry** | `inv (p : a = b) : b = a` | Defined via `transport` using `\lam x => x = a`. |
+| **Transitivity** | `trans (p : a = b) (q : b = c) : a = c` | Defined via `transport` using `\lam x => a = x`. |
+| **Congruence** | `pmap (f : A -> B) (p : a = b) : f a = f b` | Defined via `path` composition or `transport`. |
+
+## Function Extensionality
+
+The language supports **Functional Extensionality** natively (without axioms) due to the interval-based definition of equality.
+
+* **Rule**: If `\Pi (x : A) -> f x = g x`, then `f = g`.
+* **Mechanism**: A path between functions is a function returning a path.
+
+## Negation & Inequality
+
+Inequality (`a /= b`) is proved by constructing a predicate `P : A -> \Type` such that `P a` reduces to `Unit` and `P b` reduces to `Empty`.
+
+* Applying `transport` to `p : a = b` yields a function `Unit -> Empty`.
+* **Constraint**: One cannot prove `left /= right` because `I` does not allow pattern matching to distinguish endpoints in the type universe.
+
+## Examples
+
+### 1. Function Extensionality Implementation
+
+```arend
+\func funExt {A : \Type} (B : A -> \Type) {f g : \Pi (a : A) -> B a}
+             (p : \Pi (a : A) -> f a = g a) : f = g
+  => path (\lam i => \lam a => p a @ i)
+
+```
+
+### 2. Congruence (pmap)
+
+Preferred implementation using `path` for better computational properties:
+
+```arend
+\func pmap {A B : \Type} (f : A -> B) {a a' : A} (p : a = a') : f a = f a'
+  => path (\lam i => f (p @ i))
+
+```
+
+### 3. Proof of Inequality (True /= False)
+
+```arend
+-- Predicate distinguishing constructors
+\func T (b : Bool) : \Type
+  | true => \Sigma  -- Unit type (sigma with no fields)
+  | false => Empty
+
+-- Transporting Unit to Empty via the assumed equality
+\func true/=false (p : true = false) : Empty
+  => transport T p ()
+
+```
+
+### 4. Interval Elimination (coe)
+
+Defining a function on `I` requires only the value at `left`.
+
+```arend
+\func coe (P : I -> \Type) (a : P left) (i : I) : P i
+  \elim i
+  | left => a
+
+```
+
+## Edge Cases & Limitations
+
+* **Axioms**: Introducing axioms (e.g., Excluded Middle `lem`) destroys computability. Terms like `\case lem Nat \with ...` will not reduce to numerals (`0` or `1`).
+* **Pattern Matching**: Attempting `\elim i` where `i : I` results in a compiler error unless the elimination is strictly for `coe` primitives defined in the prelude.
+* **Empty vs Unit**: `Empty = Unit` is derivable if pattern matching on `I` were permitted; hence the restriction.

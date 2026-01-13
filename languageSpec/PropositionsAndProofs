@@ -1,0 +1,120 @@
+## Syntax
+
+### Type Mappings (Curry-Howard)
+False <=> Empty
+
+True <=> Unit
+
+P AND Q <=> Sigma P Q (Pair)
+
+P OR Q <=> P || Q (Sum Type)
+
+P IMPLIES Q <=> P -> Q (Function)
+
+NOT P <=> P -> Empty
+
+FORALL x:A. P(x) <=> Pi (x : A) -> P x (Dependent Function)
+
+EXISTS x:A. P(x) <=> Sigma (x : A) (P x)
+
+### Built-in Identity
+
+`x = y` (Infix for `Path` type)
+`idp` (Reflexivity proof: `a = a`)
+
+## Rules
+
+1. ** intuitionistic Logic**: Arend uses intuitionistic logic. Law of Excluded Middle () and Double Negation Elimination () are **not** provable.
+2. **Absurdity**: Elements of `Empty` prove any proposition (). This is realized via absurd patterns in case analysis.
+3. **Witnesses**: A "proof" is a term inhabiting the type corresponding to the proposition.
+* `&&` (AND) is proven by constructing a tuple `(p, q)`.
+* `||` (OR) is proven by constructors `inl p` or `inr q`.
+* `->` (IMPLIES) is proven by a function or lambda `\lam p => q`.
+
+
+4. **Quantification**:
+* Universal quantification is proved by a function taking an argument `x` and returning a proof for that specific `x`.
+* Existential quantification is proved by providing a witness `a` and a proof of `P a` in a tuple `(a, proof)`.
+
+
+5. **Verification**: Proofs involving concrete data types (e.g., `Bool`) often require case analysis (`\elim` or pattern matching) to reduce terms to canonical forms (e.g., `unit` or `idp`).
+
+## Examples
+
+### Implication and Absurdity
+
+```arend
+-- False implies everything (Ex Falso Quodlibet)
+-- Uses absurd pattern '()' for the Empty argument
+\func absurd {A : \Type} (e : Empty) : A \elim e
+  | ()
+
+-- True is just the unit element
+\func Unit-isTrue : Unit => unit
+
+```
+
+### Conjunction (Sigma Type)
+
+```arend
+-- Definition
+\func \infixr 3 && (P Q : \Type) => \Sigma P Q
+
+-- Introduction
+\func &&-intro {P Q : \Type} (p : P) (q : Q) : \Sigma P Q => (p, q)
+
+-- Elimination
+\func &&-elim1 {P Q : \Type} (t : \Sigma P Q) : P => t.1
+
+```
+
+### Disjunction (Sum Type)
+
+```arend
+-- Definition
+\data \infixr 2 || (P Q : \Type)
+  | inl P
+  | inr Q
+
+-- Elimination (Case Analysis)
+\func ||-elim {P Q R : \Type} (l : P -> R) (r : Q -> R) (x : P || Q) : R \elim x
+  | inl p => l p
+  | inr q => r q
+
+```
+
+### Quantifiers
+
+```arend
+-- Universal: For all x in Bool, x = x
+-- Proof via dependent function returning Identity
+\func forall-proof (x : Bool) : x = x
+  | true => idp
+  | false => idp
+
+-- Existential: There exists a y such that true = y
+-- Proof via dependent pair (witness, proof)
+\func exists-proof : \Sigma (y : Bool) (true = y) => (true, idp)
+
+```
+
+### Verification via Interpretation
+
+Using a helper function `T` to map boolean values to types for propositional logic on booleans.
+
+```arend
+\func T (b : Bool) : \Type
+  | true => Unit
+  | false => Empty
+
+-- Proof that not(not x) == x using case analysis
+\func not-isInvolution (x : Bool) : T (not (not x) == x)
+  | true => unit   -- Reduces to T(true == true) -> Unit
+  | false => unit  -- Reduces to T(false == false) -> Unit
+
+-- Disproving false statements (Return type is Empty)
+\func disproof (x : Bool) : T (not (not x) == not x) -> Empty
+  | true => \lam x => x
+  | false => \lam x => x
+
+```

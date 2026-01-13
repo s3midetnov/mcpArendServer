@@ -1,0 +1,189 @@
+## Syntax
+
+**Function Definition**
+
+```arend
+\func <name> {<implicit_params>} (<explicit_params>) : <ReturnType> => <body>
+\func <name> ... => \lam <params> => <body>
+\func <name> ... \with | <pattern> => <result> ...
+
+```
+
+**Data Definition**
+
+```arend
+\data <Name> <params>
+    | <Constructor1> <types>
+    | <Constructor2> <types>
+
+```
+
+**Operator Declaration**
+
+```arend
+\infix[l|r] <priority> <name>
+
+```
+
+**Module/Namespace**
+
+```arend
+\module <Name> \where { <definitions> }
+\open <Name> [ (<names>) | \hiding (<names>) | \using (<rename_map>) ]
+\import <FileReference>
+
+```
+
+## Rules
+
+### Lexical & Basic Types
+
+1. **Keywords**: All keywords begin with a backslash `\` (e.g., `\func`, `\data`, `\Type`).
+2. **Identifiers**: Alphanumeric allowed. Special characters allowed: `~!@#$%^&*-+=<>?/|[]:_`.
+3. **Numerals**: Interpreted as `Nat` (non-negative) or `Int` (negative).
+4. **Purity**: Functions are pure; no side effects or IO.
+
+### Function Semantics
+
+1. **Parameter Typing**: Types of function parameters must be specified explicitly. Type inference for parameters is not supported (unlike Haskell).
+2. **Implicits**: Parameters enclosed in `{}` are implicit. The typechecker attempts to infer them.
+* Use `_` to ask the typechecker to infer an explicit argument.
+* Inference fails if the variable occurs only inside a non-injective function call.
+* Inference generally succeeds if the variable occurs in a constructor or `\data` definition (injective contexts).
+
+
+3. **Lambda Expressions**: Parameters can be moved to the body using `\lam`. Types can be omitted in `\lam` if the function result type is explicit.
+4. **Pattern Matching**: Defined via `\with` (matching on arguments) or `\elim` (matching on specific parameters).
+5. **Recursion**: Must be **structural**. Arguments in recursive calls must be structurally simpler than the original inputs. Non-terminating functions result in compile-time errors.
+
+### Operators
+
+1. **Fixity**: Default is prefix. Infix defined via `\infix`, `\infixl`, `\infixr` with priority .
+2. **Backticks**: Any prefix function can be used infix by enclosing in backticks (e.g., `x `f` y`).
+3. **Prefix Usage**: Any infix operator can be used prefix (e.g., `+ x y`).
+
+### Data Types & Inductive Types
+
+1. **Constructors**: `\data` defines inductive types. Constructors may have parameters (including implicits).
+2. **Strict Positivity**: Recursive occurrences of the inductive type in constructor arguments must be strictly positive (cannot occur to the left of `->`).
+3. **Elimination**: Functions on inductive types use pattern matching.
+4. **Termination**: Typechecking requires decidability; therefore, all functions must be total.
+
+### Polymorphism & Dependent Types
+
+1. **Universe**: `\Type` represents the type of types. Hierarchy levels are inferred automatically.
+2. **Dependent Functions**: `\Pi (x : A) -> B` (or `\Pi (x : A) (y : B) -> C`). Codomain  may depend on value .
+3. **Sigma Types**: `\Sigma (x : A) (B x)` represents dependent pairs.
+* Equivalent to a record/tuple.
+* Projection syntax: `t.1`, `t.2`.
+* **Eta Equivalence**: `(t.1, t.2)` is computationally equal to `t`.
+
+
+
+### Namespaces
+
+1. **`\where` block**: Attached to the *entire* definition (not specific clauses). Creates a local namespace `DefinitionName.SubDefinition`.
+2. **`\let`**: Non-recursive local bindings. Variables can only depend on previously defined let-variables.
+3. **Visibility**: `\open` makes module contents visible. `\import` loads external files.
+* Conflict Resolution: `\hiding` excludes names; `\as` renames them.
+
+
+
+## Examples
+
+### Function Definitions and Signatures
+
+```arend
+-- Constant with explicit type
+\func f : Nat => 0
+
+-- Explicit parameters, merged types, implicit return type
+\func id (x y : Nat) => x
+
+-- Lambda usage with omitted parameter types
+\func foo : Nat -> Nat -> Nat => \lam x y => x
+
+-- Infix operator definition (Left associative, priority 6)
+\func \infixl 6 $$ (x y : Nat) => x
+
+```
+
+### Data Types and Pattern Matching
+
+```arend
+-- Inductive type with constructors
+\data Bool | false | true
+
+-- Pattern matching using \with
+\func not (x : Bool) : Bool \with
+  | true => false
+  | false => true
+
+-- Pattern matching using \elim
+\func if (x : Bool) (t e : Nat) : Nat \elim x
+  | true => t
+  | false => e
+
+-- Recursive Data Type (List)
+\data List (A : \Type) | nil | cons A (List A)
+
+-- Infix operator on List (Structural recursion on xs)
+\func \infixl 6 ++ {A : \Type} (xs ys : List A) : List A \elim xs
+  | nil => ys
+  | cons x xs => cons x (xs ++ ys)
+
+```
+
+### Dependent Types (Sigma)
+
+```arend
+-- Sigma type: Pairs of (Natural, Proof that Natural < 10)
+-- Note: 'n' is available in the second component's type
+\func SmallNat => \Sigma (n : Nat) (n < 10)
+
+-- Projection
+\func getNum (s : SmallNat) : Nat => s.1
+
+```
+
+### Implicit Arguments and Inference
+
+```arend
+\func id' {A : \Type} (a : A) => a
+
+-- Implicit inferred
+\func test1 => id' 0
+-- Explicitly provided implicit
+\func test2 => id' {Nat} 0
+
+```
+
+### Modules and Namespaces
+
+```arend
+\module M1 \where {
+    \func f => 1
+}
+
+\module M2 \where {
+    -- Rename 'f' to 'g' on open
+    \open M1 (f \as g)
+    \func h => g
+}
+
+-- Access via prefix
+\func test => M1.f
+
+```
+
+### Recursive Termination (Div)
+
+```arend
+-- Structural recursion enforced by helper with decreasing argument 's'
+\func div (x y : Nat) => div' x x y
+  \where
+    \func div' (s x y : Nat) : Nat \elim s
+      | 0 => 0
+      | suc s => if (x < y) 0 (suc (div' s (x - y) y))
+
+```

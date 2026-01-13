@@ -1,0 +1,184 @@
+## Syntax
+
+**Definition**
+
+```arend
+-- Record Definition
+\record Name (param1 : Type) ...
+  | field1 : Type
+  | field2 (param : Type) : Type
+  \where { ... }
+
+-- Class Definition
+\class Name (classifying_field : Type) \extends Parent1, Parent2 ...
+  | field1 : Type
+  | \infix priority op : Type
+
+```
+
+**Instantiation**
+
+```arend
+-- Anonymous Instantiation
+\new Name { | field1 => val1 | field2 => val2 }
+
+-- Function via Copattern Matching
+\func name : RecordType \cowith
+  | field1 => val1
+  | field2 => val2
+
+-- Partial Implementation (Anonymous Extension)
+Name { | field1 => val1 }
+
+```
+
+**Access**
+
+```arend
+instance.field
+Name.field {instance}
+
+```
+
+## Rules
+
+### Structural Definition
+
+* **Records** are dependent types with named components (fields), conceptually similar to named Sigma-types.
+* **Classes** are records augmented with an instance inference mechanism.
+* **Fields as Functions**: Every field `f` of a record/class `R` is a projection function `f : \Pi {x : R} -> TypeOfField`.
+* Access via dot notation (`x.f`) is syntactic sugar for `R.f {x}`.
+* Dot notation requires `x` to be a variable with an explicitly specified type. If `x` is an expression or lacks explicit typing, the full projection syntax `Field {x}` or `\let` binding is required.
+
+
+* **Parameters**: Parameters defined in the header (`\record R (A : \Type)`) are treated internally as fields. There is no semantic difference between a parameter and a field defined in the body.
+
+### Equality and Semantics
+
+* **Eta-Equivalence**: Unlike `\data` types, records satisfy eta-equivalence. If `r : R`, then `\new R { | f1 => r.f1 ... }` is computationally equal to `r`.
+* **Telescopic Dependencies**: Fields can depend on the values of preceding fields (dependent records).
+
+### Instantiation and Copatterns
+
+* **\new**: constructs an instance. All fields must be implemented unless the resulting expression is intended to be a partial implementation (type).
+* **\cowith**: Defines a function returning a record by matching on the record's fields (copatterns) rather than constructing a term on the RHS.
+* **Partial Implementation**: Providing a subset of fields (`R { | f => x }`) creates an **Anonymous Extension**.
+* This result is a **type** (subtype of `R`).
+* Instances of the extension are automatically instances of the base record.
+* `\new` can be applied to an anonymous extension if the remaining fields are supplied.
+
+
+
+### Classes and Instances
+
+* **Instance Inference**: Classes support global instances defined via `\instance`. The compiler resolves implicit parameters of class types by searching for declared instances.
+* **Classifying Field**: The first explicit parameter of a `\class` is the classifying field.
+* It determines instance resolution scope.
+* If no local instance is found, the compiler searches for a global instance matching the classifying field's type.
+* Classes can be defined without a classifying field using `\noclassifying` or by omitting explicit parameters. In this case, the first available instance is inferred.
+
+
+
+### Inheritance and Polymorphism
+
+* **\extends**: Allows a record/class to inherit fields from multiple parents.
+* **Diamond Problem**: If `Z` extends `X` and `Y`, and both `X` and `Y` extend `Base`, `Z` will contain two distinct copies of `Base` fields unless explicitly unified.
+* *Resolution*: Use common base classes or explicit field identification (`| Parent.field => value`) to unify structures.
+
+
+* **Inner Definitions**: Functions defined inside a class body (not `\where`) receive an implicit parameter `{this : ClassName}`.
+
+### Coercions
+
+* **Class to Field**: A class instance can be coerced to its classifying field automatically. If `C` has classifying field `A`, and a term of type `A` is expected, a term of type `C` is accepted (implicit `.A` access).
+* **\use \coerce**: Defines custom coercion rules in the `\where` block of a data type, record, or class.
+* `\coerce f (a : A) : B` allows `a` to be used where `B` is expected.
+* Can be defined in the source type (`A`) or target type (`B`).
+
+
+
+## Examples
+
+### Basic Record and Eta-Equivalence
+
+```arend
+\record Point
+  | x : Int
+  | y : Int
+
+\func origin : Point \cowith
+  | x => 0
+  | y => 0
+
+-- Eta-equivalence: p is computationally equal to the reconstruction
+\func eta (p : Point) : p = \new Point { | x => p.x | y => p.y } => idp
+
+```
+
+### Partial Implementation (Subtyping)
+
+```arend
+\record Triple (a b c : Nat)
+
+-- T is a type: Triple where a is fixed to 10
+\func T : \Type => Triple { | a => 10 }
+
+-- Consuming the partial type
+\func makeT : T => \new Triple { | a => 10 | b => 2 | c => 3 }
+
+-- Nesting partials
+\func T' : \Type => T { | b => 20 } -- Fixes b, inherits a=10
+
+```
+
+### Class, Instances, and Extensions
+
+```arend
+\class Monoid (E : \Type)
+  | id : E
+  | \infixl 7 * : E -> E -> E
+  | id-left (x : E) : id * x = x
+
+-- Global instance
+\instance NatAddMonoid : Monoid Nat
+  | id => 0
+  | * => +
+  | id-left => \lam _ => idp -- (Simplified)
+
+-- Extension avoiding Diamond Problem via field unification
+\class CommMonoid \extends Monoid
+  | *-comm (x y : E) : x * y = y * x
+
+\class AbGroup \extends CommMonoid
+  | inv : E -> E
+
+-- Ring definition merging Additive and Multiplicative structures
+-- Explicitly mapping fields to avoid structural clash
+\class Ring (E : \Type)
+  | AddGroup : AbGroup E
+  | MulMonoid : Monoid E
+  \where {
+    -- Coercion allowing Ring to be used as its carrier E
+    \use \coerce carrier (r : Ring) => r.E
+  }
+
+```
+
+### Coercion Syntax
+
+```arend
+\data Bool | true | false
+
+\data Bin
+  | zero
+  | one
+  \where {
+    -- Coercion FROM Bin TO Bool
+    \use \coerce toBool (b : Bin) : Bool
+      | zero => false
+      | one => true
+  }
+
+\func test (b : Bin) : Bool => b -- Implicitly calls toBool(b)
+
+```
