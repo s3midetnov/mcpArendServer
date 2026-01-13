@@ -4,30 +4,86 @@ import java.net.ServerSocket
 import java.util.Base64
 import kotlin.concurrent.thread
 import kotlin.time.measureTime
+import kotlin.system.exitProcess
 
 
 // The typechecking server
-fun main() {
-//    debug:
-//    val simpleTypechecker = SimpleTypechecker("/Users/artem.semidetnov/Documents/DatasetGenerator/Arend/arend-lib")
-//    println(simpleTypechecker.typecheckToError())
-//    return
+fun main(args: Array<String>) {
 
-    val soTimeout = 1000
-    val timeout = 30 * 60 * 1000 // 5 minutes
+    val acceptTimeout = 1000 // Time to wait for a client connection (soTimeout)
 
+    var serverLifetimeSeconds = 30 * 60 //30 minutes
+    var port = 9999
+    var sampleLibrary : String = "/Users/artem.semidetnov/Documents/DatasetGenerator/Arend/arend-lib"
 
-    val port = 9999
-    val server = ServerSocket(port)
-
-    val sampleLibrary : String = "/Users/artem.semidetnov/Documents/DatasetGenerator/Arend/arend-lib"
     val simpleTypechecker = SimpleTypechecker(sampleLibrary)
-    simpleTypechecker.typecheckToError()
-    server.soTimeout = soTimeout // 1 second timeout for accept()
+
+//    val home = System.getProperty("user.home")
+    // Try to find the folder relative to the current working directory first,
+    // then fall back to a path relative to the user's home directory.
+//    val folder = File(folderName).let {
+//        if (it.exists()) it else File(home, "Dev/mcpArendServer/$folderName")
+//    }
+
+    var i = 0
+    while (i < args.size) {
+        when (args[i]) {
+            "-p", "--port" -> {
+                if (i + 1 < args.size) {
+                    port = args[i + 1].toIntOrNull() ?: run {
+                        System.err.println("Error: Invalid port number.")
+                        exitProcess(1)
+                    }
+                    i++
+                } else {
+                    System.err.println("Error: Missing value for port.")
+                    exitProcess(1)
+                }
+            }
+            "-t", "--timeout" -> {
+                if (i + 1 < args.size) {
+                    serverLifetimeSeconds = args[i + 1].toIntOrNull() ?: run {
+                        System.err.println("Error: Invalid timeout value.")
+                        exitProcess(1)
+                    }
+                    i++
+                } else {
+                    System.err.println("Error: Missing value for timeout.")
+                    exitProcess(1)
+                }
+            }
+            "-l", "--lib" -> {
+                if (i + 1 < args.size) {
+                    sampleLibrary = args[i + 1]
+                    i++
+                } else {
+                    System.err.println("Error: Missing value for library path.")
+                    exitProcess(1)
+                }
+            }
+            "-h", "--help" -> printUsage()
+            else -> {
+                System.err.println("Unknown argument: ${args[i]}")
+                printUsage()
+                exitProcess(1)
+            }
+        }
+        i++
+    }
+    val timeoutMs = serverLifetimeSeconds * 1000L
+
+    val server = ServerSocket(port)
+    server.soTimeout = acceptTimeout
+
+    System.err.println("------------------------------------------------")
     System.err.println("Server is listening on port $port")
+    System.err.println("Server will shut down in ${serverLifetimeSeconds / (1000*60)} minutes")
+    System.err.println("------------------------------------------------")
+
+    simpleTypechecker.typecheckToError()
 
     val startTime = System.currentTimeMillis()
-    while (System.currentTimeMillis() - startTime < timeout) {
+    while (System.currentTimeMillis() - startTime < timeoutMs) {
         val client = try {
             server.accept()
         } catch (e: java.net.SocketTimeoutException) {
@@ -71,5 +127,16 @@ fun main() {
             }
         }
     }
-    System.err.println("Server timed out after ${timeout / 1000} seconds. Shutting down.")
+    System.err.println("Server timed out after ${timeoutMs / (1000 * 60)} minutes. Shutting down.")
+}
+fun printUsage() {
+    System.err.println("""
+        Usage: java -jar YourServer.jar [options]
+        
+        Options:
+          -p, --port <int>      Port number (default: 9999)
+          -t, --timeout <int>   Server lifetime in seconds (default: 1800 / 30 mins)
+          -l, --lib <path>      Path to the Arend library (default: hardcoded path)
+          -h, --help            Show this help message
+    """.trimIndent())
 }
