@@ -77,10 +77,14 @@ fun main(args: Array<String>) {
 
     System.err.println("------------------------------------------------")
     System.err.println("Server is listening on port $port")
-    System.err.println("Server will shut down in ${serverLifetimeSeconds / (1000*60)} minutes")
+    System.err.println("Server will shut down in ${serverLifetimeSeconds / 60} minutes")
     System.err.println("------------------------------------------------")
 
-    simpleTypechecker.typecheckToError()
+    val durationTypecheck = measureTime {
+        simpleTypechecker.typecheckToError()
+    }
+
+    System.err.println("The arend-library is successfully typechecked in $durationTypecheck.")
 
     val startTime = System.currentTimeMillis()
     while (System.currentTimeMillis() - startTime < timeoutMs) {
@@ -127,7 +131,7 @@ fun main(args: Array<String>) {
             }
         }
     }
-    System.err.println("Server timed out after ${timeoutMs / (1000 * 60)} minutes. Shutting down.")
+    System.err.println("Server timed out after ${serverLifetimeSeconds / 60} minutes. Shutting down.")
 }
 fun printUsage() {
     System.err.println("""

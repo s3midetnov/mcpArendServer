@@ -41,11 +41,11 @@ class ArendClientImpl : ArendClient {
             }
         } catch (e: SocketTimeoutException) {
             System.err.println("Error: The server took too long to respond!")
-            println("bee")
         } catch (e: Exception) {
             System.err.println("Connection error: ${e.message}")
-            println("eeeeb")
         }
         return "Typechecking error"
     }
+
+    override suspend fun return_library_location(): String  = "/Users/artem.semidetnov/Documents/DatasetGenerator/Arend/arend-lib"
 }

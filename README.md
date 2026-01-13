@@ -15,5 +15,21 @@ go to Settings -> Desktop app/Developer, click edit configuration and add the fo
 ```
 Alternatively, to add it to JetBrains Junie, insert the same "arend" tool in Junie/Settings/MCP Settings.
 
-The server is currently hardcoded to listen on port 9999. 
-You need to run the typechecker server, wait until it typechecked the whole library, then you can use it with Claude or Junie.
+You need to run the typechecker server, wait until it typechecked the whole library, then you can use it with Claude or Junie. 
+You can run the typechecker server either in IDE or with `/Users/USERNAME/Dev/mcpArendServer/typecheckerServer/build/install/mcpArendServer/bin/typecheckerServer`. 
+## Usage
+
+Run the server application from the console. You can override the default configuration using the following command-line arguments:
+
+| Flag | Long Flag    | Description                                      | Default       |
+| :--- | :----------- | :----------------------------------------------- | :------------ |
+| `-p` | `--port`     | The port number the server listens on.           | `9999`        |
+| `-t` | `--timeout`  | Server lifetime in seconds before auto-shutdown. | `1800` (30m)  |
+| `-l` | `--lib`      | Path to the Arend library used for typechecking. | *[System Default]* |
+| `-h` | `--help`     | Show the help message and exit.                  | N/A           |
+
+### Examples
+
+**Run with defaults:**
+```bash
+java -jar build/libs/server.jar

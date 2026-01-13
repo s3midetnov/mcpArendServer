@@ -107,7 +107,7 @@ class SimpleTypechecker (val pathToLibrary: String) {
             val moduleStr = module.toString()
             val maxModuleLen = 40
             val truncatedModule = if (moduleStr.length > maxModuleLen) "..." + moduleStr.takeLast(maxModuleLen - 3) else moduleStr
-            System.err.print("\r$bar $percentage% ($currentModuleIndex/$totalModules) Typechecking $truncatedModule" + " ".repeat(maxModuleLen - truncatedModule.length + 5))
+            System.err.println("\r$bar $percentage% ($currentModuleIndex/$totalModules) Typechecking $truncatedModule" + " ".repeat(maxModuleLen - truncatedModule.length + 5))
 
             if (library != lastUpdatedLibrary) {
                 libraryManager.updateLibrary(library, arendServer)

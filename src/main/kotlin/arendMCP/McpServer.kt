@@ -17,8 +17,6 @@ import org.example.arendClient.ArendClient
 import org.example.arendClient.ArendClientImpl
 import java.io.File
 
-//TODO:
-// 1. add a textual description of Arend features as a tool to offer LLM
 
 fun main() {
     val server: Server = createServer()
@@ -118,6 +116,19 @@ fun createServer(): Server {
         CallToolResult(
             listOf(
                 TextContent(content)
+            )
+        )
+    }
+
+    server.addTool(
+        name = "Standard_library_location",
+        description = "Returns the path to the standard library.",
+    ){input ->
+        CallToolResult(
+            listOf(
+                TextContent(
+                    arendClient.return_library_location()
+                )
             )
         )
     }
