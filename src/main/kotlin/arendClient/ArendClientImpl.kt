@@ -14,8 +14,6 @@ class ArendClientImpl : ArendClient {
         val port = 9999
         try {
             Socket(host, port).use { socket ->
-                // --- TIMEOUT LOGIC ---
-                // If read() takes longer than 2000ms, it throws SocketTimeoutException
                 socket.soTimeout = 10_000
 
                 val output = PrintWriter(socket.getOutputStream(), true)
@@ -28,16 +26,12 @@ class ArendClientImpl : ArendClient {
 
                 // 2. Read Answer (Will block until data arrives or timeout hits)
                 val encodedAnswer = input.readLine()
-                if (encodedAnswer != null) {
+                encodedAnswer?.let{
                     val decodedAnswer = String(Base64.getDecoder().decode(encodedAnswer), Charsets.UTF_8)
                     System.err.println("Server answered:\n$decodedAnswer")
                     System.err.println("--------------------------------------------------")
                     return decodedAnswer
                 }
-
-//                val home = System.getProperty("user.home")
-//                val file = File(home, "Desktop/debug.txt")
-//                file.writeText("answer is $answer")
             }
         } catch (e: SocketTimeoutException) {
             System.err.println("Error: The server took too long to respond!")
@@ -47,5 +41,35 @@ class ArendClientImpl : ArendClient {
         return "Typechecking error"
     }
 
-    override suspend fun return_library_location(): String  = "/Users/artem.semidetnov/Documents/DatasetGenerator/Arend/arend-lib"
+    override suspend fun return_library_location(): String{
+        val host = "localhost"
+        val port = 9999
+        try {
+            Socket(host, port).use { socket ->
+                socket.soTimeout = 10_000
+
+                val output = PrintWriter(socket.getOutputStream(), true)
+                val input = BufferedReader(InputStreamReader(socket.getInputStream()))
+
+                // 1. Send definition
+                System.err.println("Sending request for library location")
+                val encodedDefinition = Base64.getEncoder().encodeToString("%%%%library_location".toByteArray(Charsets.UTF_8))
+                output.println(encodedDefinition)
+
+                // 2. Read Answer (Will block until data arrives or timeout hits)
+                val encodedAnswer = input.readLine()
+                encodedAnswer?.let{
+                    val decodedAnswer = String(Base64.getDecoder().decode(encodedAnswer), Charsets.UTF_8)
+                    System.err.println("Server answered: the location is\n $decodedAnswer")
+                    System.err.println("--------------------------------------------------")
+                    return decodedAnswer
+                }
+            }
+        } catch (e: SocketTimeoutException) {
+            System.err.println("Error: The server took too long to respond!")
+        } catch (e: Exception) {
+            System.err.println("Connection error: ${e.message}")
+        }
+        return "error retrieving library location"
+    }
 }

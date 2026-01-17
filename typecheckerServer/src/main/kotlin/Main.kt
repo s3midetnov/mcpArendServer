@@ -8,22 +8,14 @@ import kotlin.system.exitProcess
 
 
 // The typechecking server
+// to run use  /Users/artem.semidetnov/Dev/mcpArendServer/typecheckerServer/build/install/typecheckerServer/bin/typecheckerServer -t 7200
 fun main(args: Array<String>) {
 
     val acceptTimeout = 1000 // Time to wait for a client connection (soTimeout)
 
     var serverLifetimeSeconds = 30 * 60 //30 minutes
     var port = 9999
-    var sampleLibrary : String = "/Users/artem.semidetnov/Documents/DatasetGenerator/Arend/arend-lib"
-
-    val simpleTypechecker = SimpleTypechecker(sampleLibrary)
-
-//    val home = System.getProperty("user.home")
-    // Try to find the folder relative to the current working directory first,
-    // then fall back to a path relative to the user's home directory.
-//    val folder = File(folderName).let {
-//        if (it.exists()) it else File(home, "Dev/mcpArendServer/$folderName")
-//    }
+    var sampleLibrary = "/Users/artem.semidetnov/Documents/DatasetGenerator/Arend/arend-lib"
 
     var i = 0
     while (i < args.size) {
@@ -70,6 +62,7 @@ fun main(args: Array<String>) {
         }
         i++
     }
+    val simpleTypechecker = SimpleTypechecker(sampleLibrary)
     val timeoutMs = serverLifetimeSeconds * 1000L
 
     val server = ServerSocket(port)
@@ -99,8 +92,20 @@ fun main(args: Array<String>) {
                 val output = PrintWriter(client.getOutputStream(), true)
 
                 val encodedRequest = input.readLine()
-                if (encodedRequest != null) {
+                encodedRequest?.let{
                     val request = String(Base64.getDecoder().decode(encodedRequest), Charsets.UTF_8)
+                    System.err.println("Received request:\n$request")
+
+
+                    if (request == "%%%%library_location") {
+                        System.err.println("Sending library location")
+                        System.err.println(simpleTypechecker.pathToLibrary.toString())
+                        System.err.println("--------------------------------------------------")
+
+                        val encodedPath = Base64.getEncoder().encodeToString(simpleTypechecker.pathToLibrary.toByteArray(Charsets.UTF_8))
+                        output.println(encodedPath)
+                        return@thread
+                    }
 
                     System.err.println("Received Code:\n$request")
 
@@ -115,15 +120,7 @@ fun main(args: Array<String>) {
                     }
                     System.err.println("Typechecking took $durationAnswer")
                 }
-//                val request = input.readText()
-//                simpleTypechecker.writeUserCode(request)
-//                System.err.println("Received: $request \n --------------------")
-//                val durationAnswer = measureTime {
-//                    val response = "Processed: ${simpleTypechecker.typecheckToError()}"
-//                    output.println(response)
-//                    output.flush()
-//                    System.err.println("Sent: $response")
-//                }
+
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {

@@ -29,26 +29,29 @@ import java.util.logging.Logger
 import kotlin.system.exitProcess
 
 //TODO:
-// 1. make so that a user can run this themselves with their own version of a library beforehand
-// 2. make so that a new library is created instead of adding files in arend-lib
+// 1. make so that a new library is created instead of adding files in arend-lib
 // 2. make so that all dependencies are added automatically
-// 3. add timeout parameter
+// 3. give LLM an ability to typecheck a whole file via adding it to the arend-lib
 
 
-class SimpleTypechecker (val pathToLibrary: String) {
+class SimpleTypechecker (val pathToLibrary: String, val isDebugging: Boolean = false) {
     val listErrorReporter = ListErrorReporter()
     val libraryManager = LibraryManager(listErrorReporter)
 
     lateinit var arendServer : ArendServer
+        private set
     lateinit var library : SourceLibrary
+        private set
     lateinit var logger: Logger
+        private set
     val libDir: Path = Paths.get(pathToLibrary)
 
     var requestedLibraries : MutableList<SourceLibrary> = ArrayList()
-
+        private set
     var isLibraryTypechecked : Boolean = false
+        private set
     var isServerInitialized : Boolean = false
-    var isDebugging : Boolean = false
+        private set
 
 
     fun createArendServer() {
