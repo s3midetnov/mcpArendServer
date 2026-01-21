@@ -1,0 +1,6 @@
+[ERROR] Operations:3:8: Internal error: coercing field must be a field belonging to the class
+  In: HasProduct
+[ERROR] Operations:9:8: Internal error: coercing field must be a field belonging to the class
+  In: HasCoproduct
+[WARNING] Order.LinearOrder:359:17: Actual level is smaller than the specified one
+  In: Tri.levelProp

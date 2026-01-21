@@ -1,3 +1,4 @@
+import simpleTypechecker.MinimalTypechecker
 import simpleTypechecker.SimpleTypechecker
 import java.io.*
 import java.net.ServerSocket
@@ -10,12 +11,16 @@ import kotlin.system.exitProcess
 // The typechecking server
 // to run use  /Users/artem.semidetnov/Dev/mcpArendServer/typecheckerServer/build/install/typecheckerServer/bin/typecheckerServer -t 7200
 fun main(args: Array<String>) {
+    var sampleLibrary = "/Users/artem.semidetnov/Documents/DatasetGenerator/Arend/arend-lib"
+    val minimalTypechecker = MinimalTypechecker(sampleLibrary)
+    minimalTypechecker.typecheckToError()
+    return
 
     val acceptTimeout = 1000 // Time to wait for a client connection (soTimeout)
 
     var serverLifetimeSeconds = 30 * 60 //30 minutes
     var port = 9999
-    var sampleLibrary = "/Users/artem.semidetnov/Documents/DatasetGenerator/Arend/arend-lib"
+//    var sampleLibrary = "/Users/artem.semidetnov/Documents/DatasetGenerator/Arend/arend-lib"
 
     var i = 0
     while (i < args.size) {
