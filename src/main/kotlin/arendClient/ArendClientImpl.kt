@@ -72,4 +72,7 @@ class ArendClientImpl : ArendClient {
         }
         return "error retrieving library location"
     }
+
+    override suspend fun return_lean_library_location(): String = "/Users/artem.semidetnov/Dev/mathlib4"
+
 }

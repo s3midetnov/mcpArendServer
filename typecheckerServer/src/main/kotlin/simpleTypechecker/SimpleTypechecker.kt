@@ -32,6 +32,7 @@ import kotlin.system.exitProcess
 // 1. make so that a new library is created instead of adding files in arend-lib
 // 2. make so that all dependencies are added automatically
 // 3. give LLM an ability to typecheck a whole file via adding it to the arend-lib
+// 4. add an argument to the MCP tool for the port with the default being 9999
 
 
 class SimpleTypechecker (val pathToLibrary: String, val isDebugging: Boolean = false) {
@@ -147,6 +148,7 @@ class SimpleTypechecker (val pathToLibrary: String, val isDebugging: Boolean = f
                 relevantErrorsSublist.add(errorDoc.toString())
         }
         if (relevantErrorsSublist.isEmpty()) return "Typechecked successfully"
+        System.err.println("typechecked as ${relevantErrorsSublist.fold("") { acc, error -> acc  +  error + "\n" }}")
         return relevantErrorsSublist.fold("") { acc, error -> acc  +  error + "\n" }
     }
 }

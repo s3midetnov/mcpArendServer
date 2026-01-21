@@ -132,5 +132,19 @@ fun createServer(): Server {
             )
         )
     }
+
+    server.addTool(
+        name = "mathlib4_lean_location",
+        description = "Returns the path to the mathlib4 lean library. ",
+    ){
+        input -> CallToolResult(
+            listOf(
+                TextContent(
+                    arendClient.return_lean_library_location()
+                )
+            )
+        )
+    }
+
     return server
 }
