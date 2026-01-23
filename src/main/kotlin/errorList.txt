@@ -1,28 +1,8 @@
 _SSSShello
-_SSSShello
-_SSSShello
-_SSSShello
-_SSSShello
-[ERROR] myfirstfile.ard:13:19: Cannot resolve reference 'pmap3'
-[ERROR] myfirstfile.ard:16:75: Type mismatch
-  Expected type: I
-    Actual type: f a b c = f a' b c
-  In: pmap (\lam a'' => f a'' b c) pa
+[ERROR] myfirstfile.ard:1:9: Cannot resolve reference 'Paths'
 [ERROR] myfirstfile.ard:13:19: Cannot resolve reference 'rewrite'
 [ERROR] myfirstfile.ard:13:43: Cannot resolve reference 'rewrite'
-_SSSShello
-[ERROR] myfirstfile.ard:13:19: Cannot resolve reference 'rewrite'
-[ERROR] myfirstfile.ard:13:43: Cannot resolve reference 'rewrite'
-[ERROR] myfirstfile.ard:13:19: Cannot resolve reference 'rewrite'
-[ERROR] myfirstfile.ard:13:43: Cannot resolve reference 'rewrite'
-_SSSShello
-[ERROR] myfirstfile.ard:13:19: Cannot resolve reference 'rewrite'
-[ERROR] myfirstfile.ard:13:43: Cannot resolve reference 'rewrite'
-_SSSShello
-[ERROR] myfirstfile.ard:13:19: Cannot resolve reference 'rewrite'
-[ERROR] myfirstfile.ard:13:43: Cannot resolve reference 'rewrite'
-[ERROR] myfirstfile.ard:13:19: Cannot resolve reference 'rewrite'
-[ERROR] myfirstfile.ard:13:43: Cannot resolve reference 'rewrite'
-_SSSShello
-[ERROR] myfirstfile.ard:13:19: Cannot resolve reference 'rewrite'
-[ERROR] myfirstfile.ard:13:43: Cannot resolve reference 'rewrite'
+[ERROR] myfirstfile.ard:16:21: Type mismatch
+  Expected type: Nat
+    Actual type: \Type
+  In: \Type
