@@ -1,8 +1,18 @@
+myfirstfile%%demo_SSSShello
 _SSSShello
+[ERROR] mysecondfile.ard:1:9: Cannot resolve reference 'Group' in Algebra
 [ERROR] myfirstfile.ard:1:9: Cannot resolve reference 'Paths'
+[ERROR] mysecondfile.ard:3:14: Cannot resolve reference 'Group'
 [ERROR] myfirstfile.ard:13:19: Cannot resolve reference 'rewrite'
 [ERROR] myfirstfile.ard:13:43: Cannot resolve reference 'rewrite'
 [ERROR] myfirstfile.ard:16:21: Type mismatch
   Expected type: Nat
     Actual type: \Type
   In: \Type
+_SSSShello
+[ERROR] Operations:3:8: Internal error: coercing field must be a field belonging to the class
+  In: HasProduct
+[ERROR] Operations:9:8: Internal error: coercing field must be a field belonging to the class
+  In: HasCoproduct
+[WARNING] Order.LinearOrder:359:17: Actual level is smaller than the specified one
+  In: Tri.levelProp

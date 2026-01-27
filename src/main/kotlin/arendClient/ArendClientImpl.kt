@@ -17,7 +17,9 @@ import java.util.Base64
 class ArendClientImpl : ArendClient {
     override suspend fun typecheck_definition(definition: String): String {
         val fileWithAnswers = File("/Users/artem.semidetnov/Dev/mcpArendServer/src/main/kotlin/errorList.txt")
+        // TODO : make the path non-hardcoded
         fileWithAnswers.writeText("")
+        fileWithAnswers.appendText(definition)
 
         triggerAction("typecheck")
         Thread.sleep(1000)
