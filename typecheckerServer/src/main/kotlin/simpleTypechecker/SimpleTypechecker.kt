@@ -147,6 +147,8 @@ class SimpleTypechecker (val pathToLibrary: String, val isDebugging: Boolean = f
                 relevantErrorsSublist.add(errorDoc.toString())
         }
         if (relevantErrorsSublist.isEmpty()) return "Typechecked successfully"
-        return relevantErrorsSublist.fold("") { acc, error -> acc  +  error + "\n" }
+        val typecheckingErrors = relevantErrorsSublist.fold("") { acc, error -> acc  +  error + "\n" }
+        System.err.println("Typechecking errors: $typecheckingErrors")
+        return typecheckingErrors
     }
 }

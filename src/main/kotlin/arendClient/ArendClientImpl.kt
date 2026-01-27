@@ -14,7 +14,7 @@ class ArendClientImpl : ArendClient {
         val port = 9999
         try {
             Socket(host, port).use { socket ->
-                socket.soTimeout = 10_000
+                socket.soTimeout = 30_000
 
                 val output = PrintWriter(socket.getOutputStream(), true)
                 val input = BufferedReader(InputStreamReader(socket.getInputStream()))
@@ -24,7 +24,7 @@ class ArendClientImpl : ArendClient {
                 val encodedDefinition = Base64.getEncoder().encodeToString(definition.toByteArray(Charsets.UTF_8))
                 output.println(encodedDefinition)
 
-                // 2. Read Answer (Will block until data arrives or timeout hits)
+                // 2. Read Answer
                 val encodedAnswer = input.readLine()
                 encodedAnswer?.let{
                     val decodedAnswer = String(Base64.getDecoder().decode(encodedAnswer), Charsets.UTF_8)
@@ -35,8 +35,10 @@ class ArendClientImpl : ArendClient {
             }
         } catch (e: SocketTimeoutException) {
             System.err.println("Error: The server took too long to respond!")
+            return "Timeout"
         } catch (e: Exception) {
             System.err.println("Connection error: ${e.message}")
+            return "Connection error"
         }
         return "Typechecking error"
     }
