@@ -1,6 +1,6 @@
 package org.example.arendClient
 
-
+import kotlinx.coroutines.delay
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -9,20 +9,39 @@ import java.time.Duration
 import java.io.File
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import kotlin.collections.fold
 
 class ArendClientImpl : ArendClient {
-    override suspend fun typecheck_definition(projectPath : String, modules : String): String {
+    override suspend fun typecheck_definition(projectPath : String, modules : List<String>): String {
+        val modulesFolded = modules.fold("", { acc, s -> "$acc$s%%" })
         createFolderForJunieIfNotExists(projectPath)
         val fileWithAnswers = File(projectPath + "/.junieCommunication/errorFile.txt")
         fileWithAnswers.writeText("")
         val projectName = projectPath.split("/").last()
-        println("projectName= $projectName")
-        triggerAction(modules + "%%${projectName}")
+        val success = try {
+            triggerAction(modulesFolded + projectName)
+        } catch (_: Exception) {
+            false
+        }
+        if (!success) {
+            return "Failed to trigger typechecking. Make sure IntelliJ is running with the Arend plugin."
+        }
 
-        Thread.sleep(1000)
+        delay(1000)
+        var listWithErrors = fileWithAnswers.readLines()
+        var ans = filterLinesOnlyFile(listWithErrors, modules.map{it.split(".").last()}).joinToString("\n")
 
-        val listWithErrors = fileWithAnswers.readLines()
-        return listWithErrors.joinToString("\n")
+        // Wait a bit more and poll if it's still empty or changing
+        var attempts = 0
+        while (attempts < 5) {
+            delay(500)
+            val newList = fileWithAnswers.readLines()
+            if (newList == listWithErrors && ans.isNotEmpty()) break
+            listWithErrors = newList
+            ans = filterLinesOnlyFile(listWithErrors, modules.map{it.split(".").last()}).joinToString("\n")
+            attempts++
+        }
+        return ans
     }
 
     fun triggerAction(actionId: String): Boolean {
@@ -68,26 +87,34 @@ class ArendClientImpl : ArendClient {
         return false
     }
 
+    fun filterLinesOnlyFile(lines: List<String>, allowedFiles: List<String>): List<String> =
+        lines.runningFold(false to "") { (keep, _), line ->
+            if (line.startsWith("[")) {
+                val parts = line.split(" ", limit = 3)
+                if (parts.size >= 2) {
+                    val fileNameWithRest = parts[1]
+                    val name = fileNameWithRest.substringBefore(".ard")
+                    val hasArd = fileNameWithRest.contains(".ard")
+                    (hasArd && name in allowedFiles) to line
+                } else {
+                    false to line
+                }
+            } else {
+                keep to line
+            }
+        }
+            .drop(1)
+            .filter { it.first }
+            .map { it.second }
+
     fun createFolderForJunieIfNotExists(projectPath: String) {
         val communicationFolder = File(projectPath, ".junieCommunication")
         val errorFile = File(communicationFolder, "errorFile.txt")
         if (!communicationFolder.exists()) {
-            val created = communicationFolder.mkdirs()
-            if (created) {
-                println("Folder .junieCommunication created.")
+            communicationFolder.mkdirs()
+            if (!errorFile.exists()) {
+                errorFile.createNewFile()
             }
-        } else {
-            println("Folder .junieCommunication already exists.")
-        }
-
-        // Create the file if it doesn't exist
-        if (!errorFile.exists()) {
-            val created = errorFile.createNewFile()
-            if (created) {
-                println("File errorFile.txt created.")
-            }
-        } else {
-            println("File errorFile.txt already exists.")
         }
     }
 }

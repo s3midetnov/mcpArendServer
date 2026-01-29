@@ -75,7 +75,7 @@ fun createServer(): Server {
 
         CallToolResult(
             listOf(
-                TextContent(arendClient.typecheck_definition(libPath,modulePaths.fold("", { acc, s -> "$acc$s%%" })))
+                TextContent(arendClient.typecheck_definition(libPath,modulePaths))
             )
         )
     }
