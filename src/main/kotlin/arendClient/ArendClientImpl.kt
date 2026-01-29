@@ -12,6 +12,8 @@ import java.nio.charset.StandardCharsets
 import kotlin.collections.fold
 
 class ArendClientImpl : ArendClient {
+    private val doneMarker = "TYPECHECK_DONE"
+
     override suspend fun typecheck_definition(projectPath : String, modules : List<String>): String {
         val modulesFolded = modules.fold("", { acc, s -> "$acc$s%%" })
         createFolderForJunieIfNotExists(projectPath)
@@ -27,21 +29,8 @@ class ArendClientImpl : ArendClient {
             return "Failed to trigger typechecking. Make sure IntelliJ is running with the Arend plugin."
         }
 
-        delay(1000)
-        var listWithErrors = fileWithAnswers.readLines()
-        var ans = filterLinesOnlyFile(listWithErrors, modules.map{it.split(".").last()}).joinToString("\n")
-
-        // Wait a bit more and poll if it's still empty or changing
-        var attempts = 0
-        while (attempts < 5) {
-            delay(500)
-            val newList = fileWithAnswers.readLines()
-            if (newList == listWithErrors && ans.isNotEmpty()) break
-            listWithErrors = newList
-            ans = filterLinesOnlyFile(listWithErrors, modules.map{it.split(".").last()}).joinToString("\n")
-            attempts++
-        }
-        return ans
+        val allowedFiles = modules.map { it.split(".").last() }
+        return waitForCompletion(fileWithAnswers, allowedFiles)
     }
 
     fun triggerAction(actionId: String): Boolean {
@@ -87,25 +76,50 @@ class ArendClientImpl : ArendClient {
         return false
     }
 
-    fun filterLinesOnlyFile(lines: List<String>, allowedFiles: List<String>): List<String> =
-        lines.runningFold(false to "") { (keep, _), line ->
-            if (line.startsWith("[")) {
-                val parts = line.split(" ", limit = 3)
-                if (parts.size >= 2) {
-                    val fileNameWithRest = parts[1]
-                    val name = fileNameWithRest.substringBefore(".ard")
-                    val hasArd = fileNameWithRest.contains(".ard")
-                    (hasArd && name in allowedFiles) to line
+    fun filterLinesOnlyFile(lines: List<String>, allowedFiles: List<String>, completionMarker: String? = null): List<String> =
+        lines
+            .filterNot { completionMarker != null && it.trim() == completionMarker }
+            .runningFold(false to "") { (keep, _), line ->
+                if (line.startsWith("[")) {
+                    val parts = line.split(" ", limit = 3)
+                    if (parts.size >= 2) {
+                        val fileNameWithRest = parts[1]
+                        val name = fileNameWithRest.substringBefore(".ard")
+                        val hasArd = fileNameWithRest.contains(".ard")
+                        (hasArd && name in allowedFiles) to line
+                    } else {
+                        false to line
+                    }
                 } else {
-                    false to line
+                    keep to line
                 }
-            } else {
-                keep to line
             }
-        }
             .drop(1)
             .filter { it.first }
             .map { it.second }
+
+    private suspend fun waitForCompletion(
+        fileWithAnswers: File,
+        allowedFiles: List<String>,
+        timeoutMillis: Long = 30000,
+        pollDelayMillis: Long = 500
+    ): String {
+        val startTime = System.currentTimeMillis()
+        var listWithErrors = fileWithAnswers.readLines()
+        var ans = filterLinesOnlyFile(listWithErrors, allowedFiles, doneMarker).joinToString("\n")
+
+        while (System.currentTimeMillis() - startTime < timeoutMillis) {
+            if (listWithErrors.any { it.trim() == doneMarker }) {
+                return if (ans.isEmpty()) "Typechecked successfully" else ans
+            }
+
+            delay(pollDelayMillis)
+            listWithErrors = fileWithAnswers.readLines()
+            ans = filterLinesOnlyFile(listWithErrors, allowedFiles, doneMarker).joinToString("\n")
+        }
+
+        return if (ans.isEmpty()) "Typechecking timed out before completion" else ans
+    }
 
     fun createFolderForJunieIfNotExists(projectPath: String) {
         val communicationFolder = File(projectPath, ".junieCommunication")
