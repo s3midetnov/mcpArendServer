@@ -12,7 +12,8 @@ import java.nio.charset.StandardCharsets
 import kotlin.collections.fold
 
 class ArendClientImpl : ArendClient {
-    private val doneMarker = "TYPECHECK_DONE"
+    private val doneTypecheckMarker = "TYPECHECK_DONE"
+    private val doneProofSearchMarker = "PROOF_SEARCH_DONE"
 
     override suspend fun typecheck_definition(projectPath : String, modules : List<String>): String {
         val modulesFolded = modules.fold("", { acc, s -> "$acc$s%%" })
@@ -21,7 +22,7 @@ class ArendClientImpl : ArendClient {
         fileWithAnswers.writeText("")
         val projectName = projectPath.split("/").last()
         val success = try {
-            triggerAction(modulesFolded + projectName)
+            triggerAction(Action.TYPECHECK_DEFINITION,modulesFolded + projectName)
         } catch (_: Exception) {
             false
         }
@@ -30,22 +31,26 @@ class ArendClientImpl : ArendClient {
         }
 
         val allowedFiles = modules.map { it.split(".").last() }
-        return waitForCompletion(fileWithAnswers, allowedFiles)
+        return waitForCompletion(fileWithAnswers, allowedFiles, doneMarker = doneTypecheckMarker)
     }
 
-    fun triggerAction(actionId: String): Boolean {
+    fun triggerAction(actionType : Action, actionId: String): Boolean {
         val START_PORT = 63342
         val END_PORT = 63352
-        val ENDPOINT = "api/detachedTypechecker" // Must match your plugin's handler path
+        val ENDPOINT = "api/detachedService"
 
-        // Use the modern Java 11+ HttpClient
+        val typeParam = when(actionType) {
+            Action.TYPECHECK_DEFINITION -> "typecheck"
+            Action.PROOF_SEARCH -> "proofSearch"
+        }
+
         val client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofMillis(500))
             .build()
 
         for (port in START_PORT..END_PORT) {
             val encodedAction = URLEncoder.encode(actionId, StandardCharsets.UTF_8.toString())
-            val url = "http://localhost:$port/$ENDPOINT?action=$encodedAction"
+            val url = "http://localhost:$port/$ENDPOINT?type=$typeParam&action=$encodedAction"
 
             try {
                 val request = HttpRequest.newBuilder()
@@ -102,7 +107,8 @@ class ArendClientImpl : ArendClient {
         fileWithAnswers: File,
         allowedFiles: List<String>,
         timeoutMillis: Long = 30000,
-        pollDelayMillis: Long = 500
+        pollDelayMillis: Long = 500,
+        doneMarker: String
     ): String {
         val startTime = System.currentTimeMillis()
         var listWithErrors = fileWithAnswers.readLines()
@@ -121,14 +127,62 @@ class ArendClientImpl : ArendClient {
         return if (ans.isEmpty()) "Typechecking timed out before completion" else ans
     }
 
+    private suspend fun waitForCompletion(
+        fileWithAnswers: File,
+        timeoutMillis: Long = 30000,
+        pollDelayMillis: Long = 500,
+        doneMarker: String
+    ): String {
+        val startTime = System.currentTimeMillis()
+        var listWithErrors = fileWithAnswers.readLines()
+        var ans = listWithErrors.joinToString("\n")
+
+        while (System.currentTimeMillis() - startTime < timeoutMillis) {
+            if (listWithErrors.any { it.trim() == doneMarker }) {
+                return if (ans.isEmpty()) "Typechecked successfully" else ans
+            }
+
+            delay(pollDelayMillis)
+            listWithErrors = fileWithAnswers.readLines()
+            ans = listWithErrors.joinToString("\n")
+        }
+
+        return if (ans.isEmpty()) "Typechecking timed out before completion" else ans
+    }
+
     fun createFolderForJunieIfNotExists(projectPath: String) {
         val communicationFolder = File(projectPath, ".junieCommunication")
         val errorFile = File(communicationFolder, "errorFile.txt")
+        val proofSearchFile = File(communicationFolder, "proofSearchResults.txt")
         if (!communicationFolder.exists()) {
             communicationFolder.mkdirs()
-            if (!errorFile.exists()) {
-                errorFile.createNewFile()
-            }
         }
+        if (!errorFile.exists()) {
+            errorFile.createNewFile()
+        }
+        if (!proofSearchFile.exists()) {
+            proofSearchFile.createNewFile()
+        }
+    }
+
+    override suspend fun proof_search(projectPath: String, query : String) : String {
+        val fileWithProofSearches = File(projectPath + "/.junieCommunication/proofSearchResults.txt")
+        fileWithProofSearches.writeText("")
+
+        val success = try {
+            triggerAction(Action.PROOF_SEARCH,query)
+        } catch (_: Exception) {
+            false
+        }
+        if (!success) {
+            return "Failed to trigger proof search. Make sure IntelliJ is running with the Arend plugin."
+        }
+        return waitForCompletion(fileWithProofSearches, doneMarker = doneProofSearchMarker)
+    }
+
+
+    enum class Action {
+        TYPECHECK_DEFINITION,
+        PROOF_SEARCH
     }
 }
