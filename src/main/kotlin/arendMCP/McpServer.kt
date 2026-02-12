@@ -36,7 +36,7 @@ fun main() {
 fun createServer(): Server {
     val info = Implementation(
         "Arend_goal_typecheck_MCP",
-        "1.1.0"
+        "1.2.0"
     )
     val options = ServerOptions(
         capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(true))
@@ -120,6 +120,65 @@ fun createServer(): Server {
             )
         )
     }
+
+    val listModulesInputSchema = Tool.Input(
+        buildJsonObject {
+            putJsonObject("libraryPath") {
+                put("type", "string")
+            }
+        }
+    )
+
+    server.addTool(
+        name = "mcp_arend_List_modules",
+        description = "Lists all supported modules from the current project and its library dependencies. " +
+                "Returns full module identifiers. You need to send it the full library path as a string. " +
+                "For example: {\"libraryPath\":\"/Users/username/Dev/myProject\"}"
+        ,listModulesInputSchema
+    ){input ->
+        val libPath = input.arguments["libraryPath"]?.jsonPrimitive?.content
+            ?: throw IllegalArgumentException("Missing libraryPath")
+        CallToolResult(
+            listOf(
+                TextContent(arendClient.list_modules(libPath))
+            )
+        )
+    }
+
+    val listModulesContentInputSchema = Tool.Input(
+        buildJsonObject {
+            putJsonObject("libraryPath") {
+                put("type", "string")
+            }
+            putJsonObject("modulePaths") {
+                put("type", "array")
+                putJsonObject("items") {
+                    put("type", "string")
+                }
+            }
+        }
+    )
+    server.addTool(
+        name = "mcp_arend_List_modules_content",
+        description = "Lists all contents of the modules you send. " +
+                "You need to send it the full library path as a string and a list of module identifiers." +
+                "Full identifier format: libraryName:locationKind:modulePath"
+        ,listModulesContentInputSchema
+    ){input ->
+        val libPath = input.arguments["libraryPath"]?.jsonPrimitive?.content
+            ?: throw IllegalArgumentException("Missing libraryPath")
+
+        val modulePathsArray = input.arguments["modulePaths"]?.jsonArray
+            ?: throw IllegalArgumentException("Missing modulePaths")
+
+        val modulePaths = modulePathsArray.map { it.jsonPrimitive.content }
+        CallToolResult(
+            listOf(
+                TextContent(arendClient.list_modules_content(libPath,modulePaths))
+            )
+        )
+    }
+
 
     return server
 }
