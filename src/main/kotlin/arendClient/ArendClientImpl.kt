@@ -7,49 +7,47 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
 import java.time.Duration
+import kotlin.ranges.rangeTo
 
-class ArendClientImpl : ArendClient {
-
+class ArendClientImpl : ArendClient{
     private val httpClient: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(2))
         .build()
 
-    override suspend fun typecheck_definition(projectPath: String, modules: List<String>): String {
-        val modulesFolded = modules.joinToString("%%")
-        val payload = "$modulesFolded%%$projectPath"
-        return sendRequest("mcp_arend_Typecheck_definition", payload)
-}
+    companion object {
+        private const val DELIMITER = "|||"
 
-    override suspend fun proof_search(projectPath: String, query: String): String {
-        return sendRequest("mcp_arend_Proof_search", query)
+        /**
+         * Formats the path for the Arend IntelliJ plugin's DetachedHTTPService.
+         * - If input is a single string: "string|||libPath"
+         * - If input is a list of strings: "str1|||str2|||...str_last|||libPath"
+         */
+        fun formatPath(input: Any?, libPath: String): String {
+            return when (input) {
+                is String -> if (input.isEmpty()) libPath else "$input$DELIMITER$libPath"
+                is List<*> -> {
+                    val joined = input.filterIsInstance<String>().joinToString(DELIMITER)
+                    if (joined.isEmpty()) libPath else "$joined$DELIMITER$libPath"
+                }
+                null -> libPath
+                else -> throw IllegalArgumentException("Input must be a String or a List<String>")
+            }
+        }
     }
 
-    override suspend fun list_modules(projectPath: String): String {
-        return sendRequest("mcp_arend_List_modules", projectPath)
-    }
-
-    override suspend fun list_modules_content(projectPath: String, modules: List<String>): String {
-        val modulesFolded = modules.joinToString("%%")
-        val payload = "$modulesFolded%%$projectPath"
-        return sendRequest("mcp_arend_List_modules_content", payload)
-    }
-
-    /**
-     * Sends the request and waits for the server to reply with the result string.
-     * No more file polling!
-     */
-    private fun sendRequest(actionType: String, actionPayload: String): String {
+    override suspend fun callArendAction(libPath: String, argument: Any?, actionId: String) : String {
         val START_PORT = 63342
         val END_PORT = 63352
         val ENDPOINT = "api/detachedService"
 
-        // Increase timeout because Typechecking might be slow (e.g., 60 seconds)
+        val actionPayload = formatPath(argument, libPath)
+
         val requestTimeout = Duration.ofSeconds(60)
 
         for (port in START_PORT..END_PORT) {
             try {
                 val encodedPayload = URLEncoder.encode(actionPayload, StandardCharsets.UTF_8.toString())
-                val url = "http://localhost:$port/$ENDPOINT?type=$actionType&action=$encodedPayload"
+                val url = "http://localhost:$port/$ENDPOINT?type=$actionId&action=$encodedPayload"
 
                 val request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
