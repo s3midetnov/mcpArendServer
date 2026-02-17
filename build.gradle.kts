@@ -1,10 +1,19 @@
 plugins {
-    kotlin("jvm") version "2.2.21"
+    kotlin("jvm") version "2.1.10"
     application
+    kotlin("plugin.serialization") version "2.1.10"
 }
 
 application{
     mainClass.set("org.example.arendMCP.McpServerKt")
+}
+
+tasks.named<JavaExec>("run") {
+    standardInput = System.`in`
+    // Redirect standard output to a pipe so we can see it if it's not JSON-RPC, 
+    // but for MCP we usually want it to go to the actual stdout.
+    // However, Gradle might be buffering or adding its own output.
+    standardOutput = System.out
 }
 
 group = "org.example"
