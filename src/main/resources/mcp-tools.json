@@ -47,6 +47,28 @@
                     "type": "string"
                 }
             }
+        },
+        {
+            "name": "GetHighlighting",
+            "description": "Returns the highlighting information (errors, warnings, etc.) for a given Arend file. You must send it the full name of the file (module) as a string. The tool will return a list of highlighting entries with their message, text range (start and end offsets), and severity level.",
+            "inputSchema": {
+                "libraryPath": {
+                    "type": "string"
+                },
+                "modulePath": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "SearchSymbols",
+            "description": "Searches for Arend definitions (classes, functions, data types, etc.) by name pattern, similar to Command+O in IntelliJ. Provide a search pattern (substring) to find matching symbols in the project. Returns a list of matching definitions with their full qualified names and file locations. Example: {\"pattern\":\"Nat\"} will find all definitions containing 'Nat' in their name.",
+            "inputSchema": {
+                "pattern": {
+                    "type": "string",
+                    "description": "The name or part of the name of the definition to search for"
+                }
+            }
         }
     ]
 }

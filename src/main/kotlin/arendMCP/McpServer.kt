@@ -16,7 +16,6 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
-import java.io.File
 import java.util.concurrent.atomic.AtomicLong
 import org.example.arendClient.ArendClientImpl
 
@@ -132,12 +131,10 @@ private data class ToolList(
 )
 
 private fun availableTools(): List<LocalTool> {
-    val path = "/Users/artem.semidetnov/Documents/ddd/Arend/intellij/build/generated/mcp/mcp-tools.json" //"../Arend/intellij/build/generated/mcp/mcp-tools.json"
-    val file = File(path)
-    if (!file.exists()) {
-        return emptyList()
-    }
-    val content = file.readText()
+    val inputStream = object {}.javaClass.classLoader.getResourceAsStream("mcp-tools.json")
+        ?: return emptyList()
+    
+    val content = inputStream.bufferedReader().use { it.readText() }
     return try {
         val toolList = Json.decodeFromString<ToolList>(content)
         toolList.tools
