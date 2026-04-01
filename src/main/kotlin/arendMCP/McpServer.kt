@@ -4,8 +4,7 @@ import io.modelcontextprotocol.kotlin.sdk.*
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
@@ -18,11 +17,17 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import java.io.File
+import java.util.concurrent.atomic.AtomicLong
 import org.example.arendClient.ArendClientImpl
 
 
+private val lastInteractionTime = AtomicLong(System.currentTimeMillis())
+private val INACTIVITY_TIMEOUT_MS = 2 * 60 * 60 * 1000L // 2 hours
+
 fun main() {
-    val server: Server = createServer()
+    val server: Server = createServer {
+        lastInteractionTime.set(System.currentTimeMillis())
+    }
     val stdioServerTransport = StdioServerTransport(
         System.`in`.asSource().buffered(),
         System.out.asSink().buffered()
@@ -32,12 +37,24 @@ fun main() {
         server.onClose { 
             job.complete() 
         }
+
+        launch {
+            while (job.isActive) {
+                delay(60000) // Check every minute
+                if (System.currentTimeMillis() - lastInteractionTime.get() > INACTIVITY_TIMEOUT_MS) {
+                    System.err.println("Inactivity timeout reached. Shutting down...")
+                    job.complete()
+                    break
+                }
+            }
+        }
+
         server.connect(stdioServerTransport)
         job.join()
     }
 }
 
-fun createServer(): Server {
+fun createServer(onInteraction: () -> Unit): Server {
     val info = Implementation(
         "arend_mcp_server",
         "1.3.0"
@@ -49,12 +66,16 @@ fun createServer(): Server {
 
     val arendClient = ArendClientImpl()
 
-    for (tool in availableTools()) {
+    val tools = availableTools()
+    System.err.println("Available tools:")
+    for (tool in tools) {
+        System.err.println("- ${tool.name}")
         server.addTool(
             name = tool.name,
             description = tool.description,
             Tool.Input(tool.inputSchema)
         ) { input ->
+            onInteraction()
             val libPath = input.arguments["libraryPath"]?.jsonPrimitive?.content
                 ?: throw IllegalArgumentException("Missing libraryPath")
 
@@ -111,7 +132,7 @@ private data class ToolList(
 )
 
 private fun availableTools(): List<LocalTool> {
-    val path = "../Arend/intellij/build/generated/mcp/mcp-tools.json"
+    val path = "/Users/artem.semidetnov/Documents/ddd/Arend/intellij/build/generated/mcp/mcp-tools.json" //"../Arend/intellij/build/generated/mcp/mcp-tools.json"
     val file = File(path)
     if (!file.exists()) {
         return emptyList()

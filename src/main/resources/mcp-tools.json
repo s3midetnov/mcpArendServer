@@ -1,0 +1,52 @@
+{
+    "tools": [
+        {
+            "name": "mcp_arend_Proof_search",
+            "description": "Triggers Arend proof search for the query you send. You need to send it the full library path as a string and the query as a string.The grammar of Proof Search queries is defined as follows:\n\n  query ::= (and_pattern '->')* and_pattern\n  and_pattern ::= (app_pattern '\\and')*\n  app_pattern app_pattern ::= atom_pattern+\n  atom_pattern ::= '_' | (IDENTIFIER '.')* IDENTIFIER | '(' app_pattern ')'For example, the query Foo -> Bar will produce the following results:\n\n\\func foo (f : Foo) : Bar -- matched\n\\func bar :    Foo -> Bar -- matched\n\\func baz :           Bar -- not matched",
+            "inputSchema": {
+                "libraryPath": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "mcp_arend_List_modules",
+            "description": "Lists all supported modules from the current project and its library dependencies. Returns full module identifiers. You need to send it the full library path as a string. For example: {\"libraryPath\":\"/Users/username/Dev/myProject\"}",
+            "inputSchema": {
+                "libraryPath": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "ShowModules",
+            "description": "Shows the content of a given file. You must send it the full name of the file (module) as a string. Then, the tool will return the content of this file. If the file is bigger than 500 lines, only the first 500 lines will be returned.In the case the file is larger than 500 lines, use another tool that shows the content of the file starting from a given line.",
+            "inputSchema": {
+                "libraryPath": {
+                    "type": "string"
+                },
+                "modulePath": {
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "ShowModulesFromLine",
+            "description": "Shows the content of a given file from line1 to line2. You must send it the full name of the file (module) as a string and the line numbers as integers. Then, the tool will return the content of this file from line1 to max(line2, line1 + 500).Provide the line numbers as a string in the format \"line1-line2\" or \"line1\". In the latter case the tool takes line2 = line1+ 500.",
+            "inputSchema": {
+                "libraryPath": {
+                    "type": "string"
+                },
+                "line1-line2": {
+                    "type": "string"
+                },
+                "modulePath": {
+                    "type": "string"
+                }
+            }
+        }
+    ]
+}
