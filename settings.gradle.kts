@@ -3,5 +3,5 @@ plugins {
 }
 rootProject.name = "mcpArendServer"
 
-includeBuild("../Arend")
+includeBuild("../arend-lang-new/Arend")
 include("typecheckerServer")
